@@ -6,7 +6,8 @@ import * as vscode from 'vscode';
 
 var coq: ChildProcessWithoutNullStreams;
 var reader: readline.Interface;
-var blocked: boolean = false;
+var panel: vscode.WebviewPanel;
+var needPanel: boolean = true;
 
 // this method is called when your extension is activated
 // your extension is activated the very first time the command is executed
@@ -25,13 +26,18 @@ export function activate(context: vscode.ExtensionContext) {
 
 	vscode.workspace.onDidChangeTextDocument(runNextLine);
 
-	async function startCoq(): Promise<void> {
+	function startCoq(): void {
 		console.log('Starting Coq...');
 		coq = spawn('sertop');
 		coq.stderr.on('data', e => { console.log(`Coq error: ${e}`); });
 		coq.addListener('close', e => { console.log('Coq closed'); });
 		coq.addListener('disconnect', () => { console.log('Coq disconnected'); });
 		coq.addListener('exit', code => { console.log(`Coq exited with code ${code}`); });
+		//create proof state panel
+		panel = vscode.window.createWebviewPanel('proofState', 'Proof State', vscode.ViewColumn.Two,
+			{ enableScripts: true });
+		needPanel = false;
+		panel.onDidDispose(() => needPanel = true);
 		//consume initial Feedback messages
 		coq.stdout.on('data', e => { console.log(`Coq said: ${e}`);
 			if(e.toString().indexOf('contents Processed') > -1){
@@ -46,10 +52,12 @@ export function activate(context: vscode.ExtensionContext) {
 // this method is called when your extension is deactivated
 export function deactivate() {}
 
+// receive and log n lines from SerAPI, then run k on the last line received
 function logLines(n: number, k: (a: string) => void): (answer: string) => void {
 	return (e => { console.log(`Coq said: ${e}`); if(n > 1){ reader.once('line', logLines(n - 1, k)); } else { k(e); } });
 }
 
+// run a line of Coq through SerAPI, then run k on the reported goals
 function runLine(line: string, k: (goals: string) => void): void {
 	console.log(`Running line ${line}`);
 	reader.question(`(Add () "${line}")`, logLines(2, a => { reader.once('line', logLines(1, b => {
@@ -59,7 +67,8 @@ function runLine(line: string, k: (goals: string) => void): void {
 			let sid = parseInt(m[0].split(" ")[1]);
 			reader.question(`(Exec ${sid})`, logLines(5, a => {
 				reader.question(`(Query () Goals)`, logLines(2, a => { reader.once('line', logLines(1, b => {
-					let goals = a.substring(a.indexOf("ObjList") + 7, a.length - 2);
+					let goalStart = a.indexOf("ObjList");
+					let goals = goalStart >= 0 ? a.substring(goalStart + 7, a.length - 2) : "Proof complete.";
 					console.log(`Goals: ${goals}`);
 					k(goals);
 				})); }));
@@ -67,20 +76,43 @@ function runLine(line: string, k: (goals: string) => void): void {
 		}})); }));
 }
 
+function makeHtml(goals: string): string {
+	return `<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Proof State</title>
+</head>
+<body>
+    ${goals}
+</body>
+</html>`;
+}
+
 function displayGoals(goals: string): void {
 	console.log(`Displaying goals: ${goals}`);
 	// alectryon fragments.v.json -o fragments.v.snippets.html
 	// alectryon --frontend coq.json --backend snippets-html fragments.json -o fragments.v.snippets.html
+	// const path = panel.webview.asWebviewUri(fragments.v.snippets.html);
+	// panel.webview.html = complete(getWebviewContent(path));
+	if(needPanel){
+		panel = vscode.window.createWebviewPanel('proofState', 'Proof State', vscode.ViewColumn.Two);
+		needPanel = false;
+	}
+	panel.webview.html = makeHtml(goals);
+	panel.reveal(vscode.ViewColumn.Two);
 }
 
+// simple test to make sure everything's working
 function startup(): void {
 	runLine("Goal True.", g =>
 	runLine("Abort.", g => {}));
 }
 
+// editor handler -- on newline, send the last line typed to Coq
 function runNextLine(e: vscode.TextDocumentChangeEvent): void {
 	let change = e.contentChanges.map(e => e.text).join("");
-	//change.split('').forEach(c => console.log(c.charCodeAt(0)));
 	if(change === '\n' || change === '\r\n'){
 		let line = e.document.lineAt(e.document.lineCount - 2).text;
 		console.log('sending %s', line);

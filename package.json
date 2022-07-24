@@ -43,8 +43,6 @@
   },
   "dependencies": {
     "@rauschma/stringio": "^1.4.0",
-    "@types/node": "^18.0.6",
-    "s-expression": "^3.1.1",
-    "watch": "^0.13.0"
+    "@types/node": "^18.0.6"
   }
 }
