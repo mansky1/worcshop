@@ -2,6 +2,8 @@
 // Import the module and reference it with the alias vscode in your code below
 import { ChildProcessWithoutNullStreams, spawn } from 'child_process';
 import * as readline from 'node:readline';
+import { fetch } from 'undici';
+import * as path from 'path';
 import * as vscode from 'vscode';
 import { ProofStatePanel } from "./panels/ProofStatePanel";
 
@@ -27,29 +29,28 @@ export function activate(context: vscode.ExtensionContext) {
 
 	function startCoq(): void {
 		console.log('Starting Coq...');
-		coq = spawn('sertop');
+		coq = spawn('python3', [path.join(context.extensionPath, 'src', 'proofServer.py')]);
+		coq.stderr.once('data', () => { runLine("Goal True.", f => runLine("Abort.", f => {})) });
 		coq.stderr.on('data', e => { console.log(`Coq error: ${e}`); });
 		coq.addListener('close', e => { console.log('Coq closed'); });
 		coq.addListener('disconnect', () => { console.log('Coq disconnected'); });
 		coq.addListener('exit', code => { console.log(`Coq exited with code ${code}`); });
-		//create proof state panel
-		ProofStatePanel.render(context.extensionUri);
-		//consume initial Feedback messages
-		coq.stdout.on('data', e => { console.log(`Coq said: ${e}`);
-			if(e.toString().indexOf('contents Processed') > -1){
-				coq.stdout.removeAllListeners();
-				reader = readline.createInterface(coq.stdout, coq.stdin);
-				startup();
-			}
-		});
+	}
+
+	// run a line of Coq through SerAPI via Alectryon
+	function runLine(line: string, k: (frags: string) => void): void {
+		console.log(`fetching http://127.0.0.1:5000/proof?` + new URLSearchParams({line: line}));
+		fetch(`http://127.0.0.1:5000/proof?` + new URLSearchParams({line: line}))
+		.then(response => { return response.json(); }, reason => console.error(`fetch failed: ${reason}`))
+		.then(myJson => {
+			var r = new Result();
+			Object.assign(r, myJson);
+			console.log(`Alectryon returned: ${r.result}`);
+			k(r.result);
+    	}, reason => console.error(`couldn't get Alectryon output: ${reason}`));
 	}
 
 	function displayGoals(goals: string): void {
-		console.log(`Displaying goals: ${goals}`);
-		// alectryon fragments.v.json -o fragments.v.snippets.html
-		// alectryon --frontend coq.json --backend snippets-html fragments.json -o fragments.v.snippets.html
-		// const path = panel.webview.asWebviewUri(fragments.v.snippets.html);
-		// panel.webview.html = complete(getWebviewContent(path));
 		ProofStatePanel.showGoals(context.extensionUri, goals);
 	}
 
@@ -59,7 +60,7 @@ export function activate(context: vscode.ExtensionContext) {
 		if(change === '\n' || change === '\r\n'){
 			let line = e.document.lineAt(e.document.lineCount - 2).text;
 			console.log('sending %s', line);
-			runLine(line, goals => { displayGoals(goals); });
+			runLine(line, displayGoals);
 		}
 	}
 }
@@ -67,32 +68,6 @@ export function activate(context: vscode.ExtensionContext) {
 // this method is called when your extension is deactivated
 export function deactivate() {}
 
-// receive and log n lines from SerAPI, then run k on the last line received
-function logLines(n: number, k: (a: string) => void): (answer: string) => void {
-	return (e => { console.log(`Coq said: ${e}`); if(n > 1){ reader.once('line', logLines(n - 1, k)); } else { k(e); } });
-}
-
-// run a line of Coq through SerAPI, then run k on the reported goals
-function runLine(line: string, k: (goals: string) => void): void {
-	console.log(`Running line ${line}`);
-	reader.question(`(Add () "${line}")`, logLines(2, a => { reader.once('line', logLines(1, b => {
-		let m = a.match( /Added [0-9]+/g );
-		if(m === null){ console.log(`Error: no Added in ${a}`); }
-		else{
-			let sid = parseInt(m[0].split(" ")[1]);
-			reader.question(`(Exec ${sid})`, logLines(5, a => {
-				reader.question(`(Query () Goals)`, logLines(2, a => { reader.once('line', logLines(1, b => {
-					let goalStart = a.indexOf("ObjList");
-					let goals = goalStart >= 0 ? a.substring(goalStart + 7, a.length - 2) : "Proof complete.";
-					console.log(`Goals: ${goals}`);
-					k(goals);
-				})); }));
-			}));
-		}})); }));
-}
-
-// simple test to make sure everything's working
-function startup(): void {
-	runLine("Goal True.", g =>
-	runLine("Abort.", g => {}));
+class Result{
+	public result = "";
 }

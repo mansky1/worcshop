@@ -4,3 +4,4 @@ node_modules
 .vscode-test/
 *.vsix
 src/extension-sertop_js.ts
+src/__pycache__/alectryon.cpython-38.pyc

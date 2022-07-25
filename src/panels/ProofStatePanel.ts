@@ -14,11 +14,9 @@ export class ProofStatePanel {
 
   public static render(extensionUri: vscode.Uri) {
     if (ProofStatePanel.currentPanel) {
-        ProofStatePanel.currentPanel._panel.reveal(vscode.ViewColumn.Two);
     } else {
       const panel = vscode.window.createWebviewPanel('proofState', 'Proof State', vscode.ViewColumn.Two,
         { enableScripts: true });
-
       ProofStatePanel.currentPanel = new ProofStatePanel(panel, extensionUri);
     }
   }
