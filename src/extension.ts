@@ -3,11 +3,10 @@
 import { ChildProcessWithoutNullStreams, spawn } from 'child_process';
 import * as readline from 'node:readline';
 import * as vscode from 'vscode';
+import { ProofStatePanel } from "./panels/ProofStatePanel";
 
 var coq: ChildProcessWithoutNullStreams;
 var reader: readline.Interface;
-var panel: vscode.WebviewPanel;
-var needPanel: boolean = true;
 
 // this method is called when your extension is activated
 // your extension is activated the very first time the command is executed
@@ -34,10 +33,7 @@ export function activate(context: vscode.ExtensionContext) {
 		coq.addListener('disconnect', () => { console.log('Coq disconnected'); });
 		coq.addListener('exit', code => { console.log(`Coq exited with code ${code}`); });
 		//create proof state panel
-		panel = vscode.window.createWebviewPanel('proofState', 'Proof State', vscode.ViewColumn.Two,
-			{ enableScripts: true });
-		needPanel = false;
-		panel.onDidDispose(() => needPanel = true);
+		ProofStatePanel.render(context.extensionUri);
 		//consume initial Feedback messages
 		coq.stdout.on('data', e => { console.log(`Coq said: ${e}`);
 			if(e.toString().indexOf('contents Processed') > -1){
@@ -46,6 +42,25 @@ export function activate(context: vscode.ExtensionContext) {
 				startup();
 			}
 		});
+	}
+
+	function displayGoals(goals: string): void {
+		console.log(`Displaying goals: ${goals}`);
+		// alectryon fragments.v.json -o fragments.v.snippets.html
+		// alectryon --frontend coq.json --backend snippets-html fragments.json -o fragments.v.snippets.html
+		// const path = panel.webview.asWebviewUri(fragments.v.snippets.html);
+		// panel.webview.html = complete(getWebviewContent(path));
+		ProofStatePanel.showGoals(context.extensionUri, goals);
+	}
+
+	// editor handler -- on newline, send the last line typed to Coq
+	function runNextLine(e: vscode.TextDocumentChangeEvent): void {
+		let change = e.contentChanges.map(e => e.text).join("");
+		if(change === '\n' || change === '\r\n'){
+			let line = e.document.lineAt(e.document.lineCount - 2).text;
+			console.log('sending %s', line);
+			runLine(line, goals => { displayGoals(goals); });
+		}
 	}
 }
 
@@ -76,46 +91,8 @@ function runLine(line: string, k: (goals: string) => void): void {
 		}})); }));
 }
 
-function makeHtml(goals: string): string {
-	return `<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Proof State</title>
-</head>
-<body>
-    ${goals}
-</body>
-</html>`;
-}
-
-function displayGoals(goals: string): void {
-	console.log(`Displaying goals: ${goals}`);
-	// alectryon fragments.v.json -o fragments.v.snippets.html
-	// alectryon --frontend coq.json --backend snippets-html fragments.json -o fragments.v.snippets.html
-	// const path = panel.webview.asWebviewUri(fragments.v.snippets.html);
-	// panel.webview.html = complete(getWebviewContent(path));
-	if(needPanel){
-		panel = vscode.window.createWebviewPanel('proofState', 'Proof State', vscode.ViewColumn.Two);
-		needPanel = false;
-	}
-	panel.webview.html = makeHtml(goals);
-	panel.reveal(vscode.ViewColumn.Two);
-}
-
 // simple test to make sure everything's working
 function startup(): void {
 	runLine("Goal True.", g =>
 	runLine("Abort.", g => {}));
-}
-
-// editor handler -- on newline, send the last line typed to Coq
-function runNextLine(e: vscode.TextDocumentChangeEvent): void {
-	let change = e.contentChanges.map(e => e.text).join("");
-	if(change === '\n' || change === '\r\n'){
-		let line = e.document.lineAt(e.document.lineCount - 2).text;
-		console.log('sending %s', line);
-		runLine(line, goals => { displayGoals(goals); });
-	}
 }
