@@ -1,0 +1,119 @@
+---------------------------------------------------------
+Running line:
+Inductive day : Type := | monday | tuesday | wednesday | thursday | friday | saturday| sunday.
+---------------------------------------------------------
+Annotated: 
+[[Sentence(contents='Inductive day : Type := | monday | tuesday | wednesday | thursday | friday | saturday| sunday.', messages=[], goals=[])]]
+
+Transformed: 
+<generator object apply_transforms at 0x7f3bd3a061f0>
+
+Snippets: 
+<generator object HtmlGenerator.gen at 0x7f3bd392e650>
+
+HTML dump: 
+<pre class="alectryon-io highlight"><!-- Generator: Alectryon --><span class="alectryon-sentence"><span class="alectryon-input"><span class="kn">Inductive</span> <span class="nf">day</span> : <span class="kt">Type</span> := | monday | tuesday | wednesday | thursday | friday | saturday| sunday.</span></span></pre><!-- alectryon-block-end -->
+
+---------------------------------------------------------
+---------------------------------------------------------
+Running line:
+Definition next_weekday (d:day) : day := match d with | monday => tuesday | tuesday => wednesday | wednesday => thursday | thursday => friday | friday => monday | saturday => monday | sunday => monday end.
+---------------------------------------------------------
+Annotated: 
+[[Sentence(contents='Definition next_weekday (d:day) : day := match d with | monday => tuesday | tuesday => wednesday | wednesday => thursday | thursday => friday | friday => monday | saturday => monday | sunday => monday end.', messages=[], goals=[])]]
+
+Transformed: 
+<generator object apply_transforms at 0x7f3bd3a061f0>
+
+Snippets: 
+<generator object HtmlGenerator.gen at 0x7f3bd392e650>
+
+HTML dump: 
+<pre class="alectryon-io highlight"><!-- Generator: Alectryon --><span class="alectryon-sentence"><span class="alectryon-input"><span class="kn">Definition</span> <span class="nf">next_weekday</span> (<span class="nv">d</span>:day) : day := <span class="kr">match</span> d <span class="kr">with</span> | monday =&gt; tuesday | tuesday =&gt; wednesday | wednesday =&gt; thursday | thursday =&gt; friday | friday =&gt; monday | saturday =&gt; monday | sunday =&gt; monday <span class="kr">end</span>.</span></span></pre><!-- alectryon-block-end -->
+
+---------------------------------------------------------
+---------------------------------------------------------
+Running line:
+Example test_next_weekday: (next_weekday (next_weekday saturday)) = tuesday.
+---------------------------------------------------------
+Annotated: 
+[[Sentence(contents='Example test_next_weekday: (next_weekday (next_weekday saturday)) = tuesday.', messages=[], goals=[Goal(name=None, conclusion='next_weekday (next_weekday saturday) = tuesday', hypotheses=[])])]]
+
+Transformed: 
+<generator object apply_transforms at 0x7f3bd3a061f0>
+
+Snippets: 
+<generator object HtmlGenerator.gen at 0x7f3bd392e650>
+
+HTML dump: 
+<pre class="alectryon-io highlight"><!-- Generator: Alectryon --><span class="alectryon-sentence"><input class="alectryon-toggle" id="--chk0" style="display: none" type="checkbox"><label class="alectryon-input" for="--chk0"><span class="kn">Example</span> <span class="nf">test_next_weekday</span>: (next_weekday (next_weekday saturday)) = tuesday.</label><small class="alectryon-output"><div><div class="alectryon-goals"><blockquote class="alectryon-goal"><span class="goal-separator"><hr></span><div class="goal-conclusion">next_weekday (next_weekday saturday) = tuesday</div></blockquote></div></div></small></span></pre><!-- alectryon-block-end -->
+
+---------------------------------------------------------
+---------------------------------------------------------
+Running line:
+Proof.
+---------------------------------------------------------
+Annotated: 
+[[Sentence(contents='Proof.', messages=[], goals=[Goal(name=None, conclusion='next_weekday (next_weekday saturday) = tuesday', hypotheses=[])])]]
+
+Transformed: 
+<generator object apply_transforms at 0x7f3bd3a061f0>
+
+Snippets: 
+<generator object HtmlGenerator.gen at 0x7f3bd392e650>
+
+HTML dump: 
+<pre class="alectryon-io highlight"><!-- Generator: Alectryon --><span class="alectryon-sentence"><input class="alectryon-toggle" id="--chk1" style="display: none" type="checkbox"><label class="alectryon-input" for="--chk1"><span class="kn">Proof</span>.</label><small class="alectryon-output"><div><div class="alectryon-goals"><blockquote class="alectryon-goal"><span class="goal-separator"><hr></span><div class="goal-conclusion">next_weekday (next_weekday saturday) = tuesday</div></blockquote></div></div></small></span></pre><!-- alectryon-block-end -->
+
+---------------------------------------------------------
+---------------------------------------------------------
+Running line:
+simpl.
+---------------------------------------------------------
+Annotated: 
+[[Sentence(contents='simpl.', messages=[], goals=[Goal(name=None, conclusion='tuesday = tuesday', hypotheses=[])])]]
+
+Transformed: 
+<generator object apply_transforms at 0x7f3bd3a061f0>
+
+Snippets: 
+<generator object HtmlGenerator.gen at 0x7f3bd392e650>
+
+HTML dump: 
+<pre class="alectryon-io highlight"><!-- Generator: Alectryon --><span class="alectryon-sentence"><input class="alectryon-toggle" id="--chk2" style="display: none" type="checkbox"><label class="alectryon-input" for="--chk2"><span class="nb">simpl</span>.</label><small class="alectryon-output"><div><div class="alectryon-goals"><blockquote class="alectryon-goal"><span class="goal-separator"><hr></span><div class="goal-conclusion">tuesday = tuesday</div></blockquote></div></div></small></span></pre><!-- alectryon-block-end -->
+
+---------------------------------------------------------
+---------------------------------------------------------
+Running line:
+reflexivity.
+---------------------------------------------------------
+Annotated: 
+[[Sentence(contents='reflexivity.', messages=[], goals=[])]]
+
+Transformed: 
+<generator object apply_transforms at 0x7f3bd3a061f0>
+
+Snippets: 
+<generator object HtmlGenerator.gen at 0x7f3bd392e650>
+
+HTML dump: 
+<pre class="alectryon-io highlight"><!-- Generator: Alectryon --><span class="alectryon-sentence"><span class="alectryon-input"><span class="bp">reflexivity</span>.</span></span></pre><!-- alectryon-block-end -->
+
+---------------------------------------------------------
+---------------------------------------------------------
+Running line:
+Qed.
+---------------------------------------------------------
+Annotated: 
+[[Sentence(contents='Qed.', messages=[], goals=[])]]
+
+Transformed: 
+<generator object apply_transforms at 0x7f3bd3a061f0>
+
+Snippets: 
+<generator object HtmlGenerator.gen at 0x7f3bd392e650>
+
+HTML dump: 
+<pre class="alectryon-io highlight"><!-- Generator: Alectryon --><span class="alectryon-sentence"><span class="alectryon-input"><span class="kn">Qed</span>.</span></span></pre><!-- alectryon-block-end -->
+
+---------------------------------------------------------

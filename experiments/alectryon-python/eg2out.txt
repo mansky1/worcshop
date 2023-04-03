@@ -1,0 +1,15 @@
+---------------------------------------------------------
+Running line:
+Goal True.
+---------------------------------------------------------
+Annotated: 
+[[Sentence(contents='Goal True.', messages=[], goals=[Goal(name=None, conclusion='True', hypotheses=[])])]]
+
+Transformed: 
+<generator object apply_transforms at 0x7fd2a4e4e8f0>
+
+Snippets: 
+<generator object HtmlGenerator.gen at 0x7fd2a4d76650>
+
+HTML dump: 
+<pre class="alectryon-io highlight"><!-- Generator: Alectryon --><span class="alectryon-sentence"><input class="alectryon-toggle" id="--chk0" style="display: none" type="checkbox"><label class="alectryon-input" for="--chk0"><span class="kn">Goal</span> <span class="kt">True</span>.</label><small class="alectryon-output"><div><div class="alectryon-goals"><blockquote class="alectryon-goal"><span class="goal-separator"><hr></span><div class="goal-conclusion"><span class="kt">True</span></div></blockquote></div></div></small></span></pre><!-- alectryon-block-end -->
