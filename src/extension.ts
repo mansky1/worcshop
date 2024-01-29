@@ -13,6 +13,13 @@ var reader: readline.Interface;
 // this method is called when your extension is activated
 // your extension is activated the very first time the command is executed
 export function activate(context: vscode.ExtensionContext) {
+	console.log("test0");
+	vscode.workspace.onDidSaveTextDocument((document) => {
+		console.log("test1");
+        if (document.languageId === "c") {
+            runFile(document.fileName);
+        }
+    });
 	
 	// Use the console to output diagnostic information (console.log) and errors (console.error)
 	// This line of code will only be executed once when your extension is activated
@@ -25,16 +32,34 @@ export function activate(context: vscode.ExtensionContext) {
 
 	context.subscriptions.push(disposable);
 
-	vscode.workspace.onDidChangeTextDocument(runNextLine);
+	//vscode.workspace.onDidChangeTextDocument(runNextLine);
 
 	function startCoq(): void {
 		console.log('Starting Coq...');
-		coq = spawn('python3', [path.join(context.extensionPath, 'src', 'proofServer.py')]);
-		coq.stderr.once('data', () => { runLine("Goal True.", f => runLine("Abort.", f => {})) });
+		coq = spawn('/home/ghostxxx/anaconda3/bin/python', [path.join(context.extensionPath, 'src', 'proofServer.py')]);
+		coq.stderr.once('data', () => { runLine("Goal True.", f => runLine("Abort.", f => {})) ;});
 		coq.stderr.on('data', e => { console.log(`Coq error: ${e}`); });
 		coq.addListener('close', e => { console.log('Coq closed'); });
 		coq.addListener('disconnect', () => { console.log('Coq disconnected'); });
 		coq.addListener('exit', code => { console.log(`Coq exited with code ${code}`); });
+	}
+
+	function runFile(fileName: string){
+        console.log(fileName);
+		const { exec } = require("child_process");
+		exec(`clightgen ${fileName}`, (err: any, stdout: any, stderr: any) => {
+			if (err) {
+				console.error(err);
+				return;
+			}
+			if (stderr) {
+				console.log(`stderr: ${stderr}`);
+				return;
+			}
+			else{
+			console.log("test passed");
+			}
+		});
 	}
 
 	// run a line of Coq through SerAPI via Alectryon
