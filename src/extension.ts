@@ -6,6 +6,7 @@ import { fetch } from 'undici';
 import * as path from 'path';
 import * as vscode from 'vscode';
 import { ProofStatePanel } from "./panels/ProofStatePanel";
+import { readFileSync } from 'fs';
 
 var coq: ChildProcessWithoutNullStreams;
 var reader: readline.Interface;
@@ -32,7 +33,7 @@ export function activate(context: vscode.ExtensionContext) {
 
 	context.subscriptions.push(disposable);
 
-	//vscode.workspace.onDidChangeTextDocument(runNextLine);
+	vscode.workspace.onDidChangeTextDocument(runNextLine);
 
 	function startCoq(): void {
 		console.log('Starting Coq...');
@@ -44,10 +45,14 @@ export function activate(context: vscode.ExtensionContext) {
 		coq.addListener('exit', code => { console.log(`Coq exited with code ${code}`); });
 	}
 
-	function runFile(fileName: string){
-        console.log(fileName);
+	function runFile(filePath: string){
+		let parsedPath = path.parse(filePath);    
+		const newfilePath= path.join(parsedPath.dir, parsedPath.name + '.v');
+		console.log(newfilePath);   /// debugging
+		const fileName = path.basename(filePath);   // not required
+        console.log(filePath);  // debugging
 		const { exec } = require("child_process");
-		exec(`clightgen ${fileName}`, (err: any, stdout: any, stderr: any) => {
+		exec(`clightgen ${filePath}`, (err: any, stdout: any, stderr: any) => {
 			if (err) {
 				console.error(err);
 				return;
@@ -57,7 +62,10 @@ export function activate(context: vscode.ExtensionContext) {
 				return;
 			}
 			else{
-			console.log("test passed");
+			console.log("test passed");  // debugging
+			const words = readFileSync(newfilePath, 'utf-8');
+			//console.log(words);   debugging
+			runLine(words , displayGoals);
 			}
 		});
 	}
