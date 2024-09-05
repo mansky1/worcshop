@@ -26,6 +26,12 @@ export function activate(context: vscode.ExtensionContext) {
 	context.subscriptions.push(disposable);
 
 	vscode.workspace.onDidChangeTextDocument(runNextLine);
+	/*vscode.workspace.onDidSaveTextDocument((document) => {
+		console.log("test1");
+        if (document.languageId === "c") {
+            runFile(document.fileName);
+        }
+    });*/
 
 	function startCoq(): void {
 		console.log('Starting Coq...');
@@ -37,6 +43,25 @@ export function activate(context: vscode.ExtensionContext) {
 		coq.addListener('exit', code => { console.log(`Coq exited with code ${code}`); });
 	}
 
+	function runFile(fileName: string){
+		//const fileName = path.basename(filePath);
+        console.log(fileName);
+		const { exec } = require("child_process");
+		exec(`clightgen ${fileName}`, (err: any, stdout: any, stderr: any) => {
+			if (err) {
+				console.error(err);
+				return;
+			}
+			if (stderr) {
+				console.log(`stderr: ${stderr}`);
+				return;
+			}
+			else{
+			console.log("test passed");
+			}
+		});
+	}
+	
 	// run a line of Coq through SerAPI via Alectryon
 	function runLine(line: string, k: (frags: string) => void): void {
 		console.log(`fetching http://127.0.0.1:5000/proof?` + new URLSearchParams({line: line}));
@@ -63,6 +88,10 @@ export function activate(context: vscode.ExtensionContext) {
 			runLine(line, displayGoals);
 		}
 	}
+
+	// use SerAPI SaveDoc to save a compiled .vo file? Or should we be storing lines of Coq in another file before sending them?
+	// for navigation, we can save the sentence ID associated with each line, and then use Cancel to retract
+	// also check how VSCoq handles this?
 }
 
 // this method is called when your extension is deactivated
