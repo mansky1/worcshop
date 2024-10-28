@@ -13,12 +13,12 @@ var reader: readline.Interface;
 // this method is called when your extension is activated
 // your extension is activated the very first time the command is executed
 var targetFilePath:string;
+var currDirPath:string;
 
 export function activate(context: vscode.ExtensionContext) {
-    console.log("test0");
+    
     vscode.workspace.onDidSaveTextDocument((document) => {
-        console.log("test1");
-        const progs64DirPath = '/mnt/c/Users/hmodi5/worcshop/VST/progs64/proofgen.v';
+        const progs64DirPath = '/home/hrenik2/.opam/default/lib/coq/user-contrib/VST/progs64/proofgen.v';
         const filePath = path.dirname(document.uri.fsPath);
         targetFilePath = path.join(filePath, "proofgen.v");
         fs.copyFile(progs64DirPath, targetFilePath, (err: any) => {
@@ -42,25 +42,39 @@ export function activate(context: vscode.ExtensionContext) {
     let disposable = vscode.commands.registerCommand('worcshop.startCoq', startCoq);
     context.subscriptions.push(disposable);
     vscode.workspace.onDidChangeTextDocument(runNextLine);
+
     function startCoq(): void {
         console.log('Starting Coq...');
-        coq = spawn('/home/ghostxxx/anaconda3/bin/python', [path.join(context.extensionPath, 'src', 'proofServer.py')]);
+        coq = spawn('/home/ghostxxx/anaconda3/bin/python3', [path.join(context.extensionPath, 'src', 'proofServer.py')]);
         coq.stderr.once('data', () => { runLine("Goal True.", f => runLine("Abort.", f => {})) ;});
         coq.stderr.on('data', e => { console.log(`Coq error: ${e}`); });
         coq.addListener('close', e => { console.log('Coq closed'); });
         coq.addListener('disconnect', () => { console.log('Coq disconnected'); });
         coq.addListener('exit', code => { console.log(`Coq exited with code ${code}`); });
     }
+
     function runFile(filePath: string){
         let parsedPath = path.parse(filePath);
+        currDirPath = parsedPath.dir;
         const newfilePath= path.join(parsedPath.dir, parsedPath.name + '.v');
-        const newfilePath2= path.join(parsedPath.dir, parsedPath.name + '.vo');
-        console.log(newfilePath);   /// debugging
-        const fileName = path.basename(filePath);   // not required
-        console.log(filePath);  // debugging
+        const verifFilePath= path.join(parsedPath.dir, 'verif_' + parsedPath.name + '.v');
         const { exec } = require("child_process");
-        const flags = "-Q /mnt/c/Users/hmodi5/worcshop TOP -Q /mnt/c/Users/hmodi5/worcshop/VST/msl VST.msl -Q /mnt/c/Users/hmodi5/worcshop/VST/sepcomp VST.sepcomp -Q /mnt/c/Users/hmodi5/worcshop/VST/veric VST.veric -Q /mnt/c/Users/hmodi5/worcshop/VST/floyd VST.floyd -R /mnt/c/Users/hmodi5/worcshop/VST/compcert compcert -Q /mnt/c/Users/hmodi5/worcshop/VST/zlist VST.zlist ";
-        const command = `clightgen -normalize ${filePath} && coqc ${flags} ${newfilePath} && coqc ${flags} ${targetFilePath} > /mnt/c/Users/hmodi5/worcshop/verif_input.v`;
+        // Define constant for reusable paths and flags
+        const baseFlags = [
+            `-Q ${parsedPath.dir} "" `,
+            `-Q /mnt/c/Users/UIC/downloads/worcshop-main/worcshop-main TOP`,
+            `-Q /home/hrenik2/.opam/default/lib/coq/user-contrib/VST/msl VST.msl`,
+            `-Q /home/hrenik2/.opam/default/lib/coq/user-contrib/VST/sepcomp VST.sepcomp`,
+            `-Q /home/hrenik2/.opam/default/lib/coq/user-contrib/VST/veric VST.veric`,
+            `-Q /home/hrenik2/.opam/default/lib/coq/user-contrib/VST/floyd VST.floyd`,
+            `-R /home/hrenik2/.opam/default/lib/coq/user-contrib/compcert compcert`,
+            `-Q /home/hrenik2/.opam/default/lib/coq/user-contrib/VST/zlist VST.zlist`
+        ];
+        // Join the flags into a single string
+        const flags = baseFlags.join(' ');
+        const command = `clightgen -normalize ${filePath} &&
+                        coqc ${flags} ${newfilePath} &&
+                        coqc ${flags} ${targetFilePath} > ${verifFilePath}`;
         exec(command, (err: any, stdout: any, stderr: any) => {
             if (err) {
                 console.error(err);
@@ -72,27 +86,40 @@ export function activate(context: vscode.ExtensionContext) {
             }
             else{
             console.log("test passed");  // debugging
-            const words = readFileSync(newfilePath, 'utf-8');
-            //console.log(words);   debugging
-            runLine(words , displayGoals);
+            // Extract proof code from verif_*.v file, keeping only content within double quotes
+            const words = readFileSync(verifFilePath, 'utf-8');
+            const extractedCode = words.match(/"([^"]+)"/);
+            // Check if 'extractedCode' is not null and 'extractedCode[1]' exists
+            if (extractedCode && extractedCode[1]) {  
+                const verifProof = extractedCode[1];
+                runLine(verifProof, displayGoals);
+            } else {
+                console.error("Error: Unable to extract proof code from verif_*.v file. Matching double quotes not found.");
+            }
             }
         });
     }
+
     // run a line of Coq through SerAPI via Alectryon
     function runLine(line: string, k: (frags: string) => void): void {
-        console.log(`fetching http://127.0.0.1:5000/proof?` + new URLSearchParams({line: line}));
-        fetch(`http://127.0.0.1:5000/proof?` + new URLSearchParams({line: line}))
+        console.log(`fetching http://127.0.0.1:5000/proof?` + new URLSearchParams({line: line, path: currDirPath}));
+        fetch(`http://127.0.0.1:5000/proof?` + new URLSearchParams({line: line, path: currDirPath}))
         .then(response => { return response.json(); }, reason => console.error(`fetch failed: ${reason}`))
         .then(myJson => {
             var r = new Result();
             Object.assign(r, myJson);
-            console.log(`Alectryon returned: ${r.result}`);
-            k(r.result);
+            console.log();
+            console.log(`Alectryon goal returned: ${r.goalConclusion}`);
+            console.log();
+            console.log(`Alectryon message returned: ${r.messageInfo}`);
+            k(r.messageInfo);
         }, reason => console.error(`couldn't get Alectryon output: ${reason}`));
     }
+
     function displayGoals(goals: string): void {
         ProofStatePanel.showGoals(context.extensionUri, goals);
     }
+
     // editor handler -- on newline, send the last line typed to Coq
     function runNextLine(e: vscode.TextDocumentChangeEvent): void {
         let change = e.contentChanges.map(e => e.text).join("");
@@ -103,8 +130,12 @@ export function activate(context: vscode.ExtensionContext) {
         }
     }
 }
+
 // this method is called when your extension is deactivated
 export function deactivate() {}
+
+// Result class definition to capture output from Alectryon
 class Result{
-    public result = "";
+    public goalConclusion = "";
+    public messageInfo = "";
 }
