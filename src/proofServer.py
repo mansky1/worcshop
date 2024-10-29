@@ -2,7 +2,7 @@ from flask import Flask, request
 from alectryon.serapi import SerAPI
 from alectryon.cli import *
 from alectryon.core import RichSentence
-# from graphVisualizer import generate_visualization
+from graphVisualizer import generate_proof_graph
 
 # Global variables
 app = Flask(__name__)
@@ -52,8 +52,12 @@ def run_line(line):
                         # Get message contents
                         message_info = message.contents
 
-    # generate_visualization(goal_conclusion)
-    # print(goal_conclusion) # debugging
+    print(goal_conclusion) # debugging
+
+    # Function call to generate and render a visual graph from goal conclusion contents
+    if goal_conclusion:
+        generate_proof_graph(goal_conclusion)
+        
     return {
             "goalConclusion" : goal_conclusion, 
             "messageInfo" : message_info
