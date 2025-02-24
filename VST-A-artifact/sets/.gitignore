@@ -1,8 +1,0 @@
-*.vo
-*.glob
-*.vos
-*.vok
-*.aux
-.depend
-CONFIGURE
-_CoqProject
