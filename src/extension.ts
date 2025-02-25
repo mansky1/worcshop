@@ -16,8 +16,9 @@ var targetFilePath:string;
 var currDirPath:string;
 
 export function activate(context: vscode.ExtensionContext) {
+    console.log("activation");
     vscode.workspace.onDidSaveTextDocument((document) => {
-        const progs64DirPath = '/home/harsh/.opam/default/lib/coq/user-contrib/VST/progs64/proofgen.v';
+        const progs64DirPath = '/home/harsh/Desktop/BITSLAB/worcshop/src/proofgen.v';
         const filePath = path.dirname(document.uri.fsPath);
         const targetFilePath = path.join(filePath, "proofgen.v");
 
@@ -42,9 +43,10 @@ export function activate(context: vscode.ExtensionContext) {
 function generateAndSaveVFile(cFilePath: string) {
     let parsedPath = path.parse(cFilePath);
     const newFilePath = path.join(parsedPath.dir, parsedPath.name + '.v');
+    console.log("filepath is");
 
    
-    const clightgenCommand = `clightgen -normalize ${cFilePath} > "${newFilePath}"`;
+    const clightgenCommand = `clightgen -normalize ${cFilePath}`;
 
     const { exec } = require("child_process");
     exec(clightgenCommand, (err: any, stdout: any, stderr: any) => {
